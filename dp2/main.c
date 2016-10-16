@@ -6,7 +6,7 @@
 
 #define numberToFit 6
 #define min_Val .01
-#define printDebug 1
+#define printDebug 0
 #define maxCharLength 1000
 #define maxNumberOfLists 100
 #define runAllLists 1 //if 0 it will only run the first list in the input file
@@ -210,8 +210,8 @@ int readInputFile(int arrays_to_organize[maxNumberOfLists][maxCharLength], char 
    if (stream){
 
     int lineCount = 0;
-    char line[32];
-    while(fgets(line, 32, stream)){
+    char line[maxCharLength];
+    while(fgets(line, maxCharLength, stream)){
 	 	char * pch;
 	 	//printf ("Splitting string \"%s\" into tokens:\n", line);
 	 	int rowCount = 0;
@@ -305,7 +305,7 @@ int main(int argc, char *argv[])
 		
 		if(printDebug) printf("Finished Sorting\n");
 		if(printDebug) printf("Finished in: %d\n", numberOfFlips);
-		printf("%s(%d)",returnedString, numberOfFlips);
+		printf("%s(%d)\n",returnedString, numberOfFlips);
 	}
 	
     return 0;
