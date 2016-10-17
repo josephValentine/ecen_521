@@ -6,10 +6,10 @@
 
 #define numberToFit 6
 #define min_Val .01
-#define printDebug 0
+#define printDebug 1
 #define maxCharLength 1000
 #define maxNumberOfLists 100
-#define runAllLists 1 //if 0 it will only run the first list in the input file
+#define runAllLists 0 //if 0 it will only run the first list in the input file
 
 int numberOfFlips = 0;
 int curMaxLoc;
@@ -176,6 +176,7 @@ void findNextFlip(int array_input[], int array_sort[], int curSearchInt, char * 
 		curMinLoc++;
 		findNextFlip(array_input, array_sort, curSearchInt-1, returnString);
 		return;
+
 	}
 	if(!forwardSearch)
 	{
@@ -197,10 +198,86 @@ void findNextFlip(int array_input[], int array_sort[], int curSearchInt, char * 
 		curMaxLoc--;
 		findNextFlip(array_input, array_sort, curSearchInt-1, returnString);
 		return;
+
 	}		
 	printf("-Don't know what to do here, should not get to here\n");
 	
 }
+
+
+/*
+sudo code for chaining when there is no obvious answer
+	
+	topVal = array[0];
+
+	//search for chains
+
+	//find the next highest val
+	for(i=0; i<array.length; i++){
+		if(array[i] == topVal + 1) //find the next biggest value (there should always be a bigger val because otherwise it would be one of the obvious solutions)
+			break;
+	}
+	nextHighestPos = i;
+	
+	//see if there is a chain going forwards
+	prev = array[nextHigestPos];
+	for(i=nextHighestPos+1; i<array.length; i++){
+		if(array[i] == prev + 1){ //chain continues?
+			prev++;
+		} else {
+			break;
+		}
+	}
+	highestInChainPos = i-1;
+
+
+	//search for lower vals
+	for(i=0; i<array.length; i++){
+		if(array[i] == topVal - 1) //find the next biggest value (there should always be a bigger val because otherwise it would be one of the obvious solutions)
+			break;
+	}
+	nextLowestPos = i;
+	
+	//see if there is a chain going backwards
+	prev = array[nextLowestPos];
+	for(i=nextLowestPos-1; i>0; i--){
+		if(array[i] == prev - 1){ //chain continues?
+			prev--;
+		} else {
+			break;
+		}
+	}
+	lowestInChainPos = i+1;
+
+	//now that we now where the chains are we can be smarter about our flips
+	//important we need to update our pointers to lowest/highest so they are on the same val after flips
+	//there are 8 cases:
+	case 1: //4 ... 567 ... 23 ...
+		//code above for finding chains must be modified for this case (not hard just havent yet)
+	case 2:	//4 ... 567 ... 32 ...
+		flip(nextLowestPos); // ...765 ... 432
+		flip(nextHighestPos); //567...432
+		flip(nextLowestPos + 1); //...765432 
+	case 3:	//4 ... 765 ... 23 ...
+		//code above for finding chains must be modified for this case (not hard just havent yet)
+	case 4:	//4 ... 765 ... 32 ...
+		//code above for finding chains must be modified for this case (not hard just havent yet)
+	case 5:	//4 ... 23 ... 567 ...
+		//code above for finding chains must be modified for this case (not hard just havent yet)
+	case 6:	//4 ... 23 ... 765 ...
+		//code above for finding chains must be modified for this case (not hard just havent yet)
+	case 7:	//4 ... 32 ... 567 ...
+		flip(nextHighestPos); // ...23 ... 4567
+		flip(nextLowestPos); //32...4567
+		flip(nextHIghestPos + 1); //...234567 
+	case 8:	//4 ... 32 ... 765 ...
+		//code above for finding chains must be modified for this case (not hard just havent yet)
+
+	
+	findNextFlip();
+
+*/
+
 
 int readInputFile(int arrays_to_organize[maxNumberOfLists][maxCharLength], char * filename){
 	FILE *stream;
