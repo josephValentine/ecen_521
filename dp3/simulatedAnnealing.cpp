@@ -1,31 +1,38 @@
+/*---------------------------------------------------------------------------
+  General Darius: Design Problem 3
+  
+    SIMULATED ANNEALING
+    author: Joseph Valentine
+    date: nov 16 2016
+ ---------------------------------------------------------------------------*/
 #include<iostream>
-#include <map>
-#include <list>
 #include <fstream>
 #include <string>
 #include <typeinfo>
 #include <vector>
 #include <math.h>
+#include <ctime>
 using namespace std;
 
-#define INPUTNAME "/Users/josephvalentine/Documents/code/c/ecen_521/dp3/map25.txt"
-#define NUMCITIES 25
+#define INPUTNAME "/Users/josephvalentine/Documents/code/c/ecen_521/dp3/map8.txt"
+#define NUMCITIES 8
 #define BOUNDARY 100
 #define HIGH_TEMP 1000
-#define BPENALTY 10*HIGH_TEMP
 #define LOW_TEMP 1
 #define EMIN 10
-#define ITERATE_NUM 10000
-#define K 0.09
-#define COOLING_FACTOR 0.999
+#define ITERATE_NUM 1000
+#define K 0.2
+#define COOLING_FACTOR 0.99
 #define DEBUG 0
 
-  //init the global vars
- int vertices[NUMCITIES][NUMCITIES];
- int fNext[NUMCITIES][NUMCITIES];
- int choseWorse=0;
+//init the global vars
+int vertices[NUMCITIES][NUMCITIES]; //holds the distances between the cities
+int fNext[NUMCITIES][NUMCITIES];//used after floyd-warshall to print the city paths
+int choseWorse=0;//helpfull for debuging
  
-// method to add an undirected edge using adjacency list
+/*---------------------------------------------------------------------------
+  add the cities to the 'vertices' adjacency matrix
+ ---------------------------------------------------------------------------*/
 void addEdge(int city1, int city2, int dist)
 {
     vertices[city1][city2] = dist;
@@ -33,7 +40,9 @@ void addEdge(int city1, int city2, int dist)
     if(DEBUG)
       cout <<"adding " <<city1 << "to "<<city2 << "with weight "<< vertices[city1][city2] << std::endl;
 }
-
+/*---------------------------------------------------------------------------
+  print the adjacency matrix
+ ---------------------------------------------------------------------------*/
 void printVertices(){
   cout << vertices[0][1] << std::endl;
   cout << vertices[1][0] << std::endl;
@@ -46,14 +55,23 @@ void printVertices(){
     }
     cout << endl;
 }
-
-void printVec(vector<int> vec){
+/*---------------------------------------------------------------------------
+  helpfull function to print vectors
+ ---------------------------------------------------------------------------*/
+string ABC[26]={"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+void printVec(vector<int> vec, bool printABC){
   for(int i=0; i<vec.size(); i++){
-    cout << vec[i] << " ";
+    if(printABC){
+      cout << ABC[vec[i]] << " ";
+    } else {
+      cout << vec[i] << " ";
+    }
   }
   //cout << endl;
 }
-
+/*---------------------------------------------------------------------------
+  init the vertices and fnext matrices
+ ---------------------------------------------------------------------------*/
 void initMatrix(){
     for(int i=0; i < NUMCITIES; i++){
       for(int j=0; j < NUMCITIES; j++){
@@ -69,6 +87,8 @@ void initMatrix(){
 }
 /*---------------------------------------------------------------------------
   use floyd warshall to compute shortest path between any 2 cities
+  these calculated paths will replace the originals that were placed
+  in the vertices matrix. we then store the 'next' value in our fNext matrix
  ---------------------------------------------------------------------------*/
 void floyd(){
  int throughK; //dist through vertex k
@@ -86,7 +106,7 @@ void floyd(){
  }
 }
 /*---------------------------------------------------------------------------
-what is the shortest path from i to j?
+what is the shortest path from i to j? 
  ---------------------------------------------------------------------------*/
 vector <int> floydPath(int i, int j){
   vector <int> path;
@@ -97,7 +117,9 @@ vector <int> floydPath(int i, int j){
   }
   return path;
 }
-
+/*---------------------------------------------------------------------------
+  find the distance of the current route
+ ---------------------------------------------------------------------------*/
 int findEnergy(vector<int> state){
   int energy = 0;
   int cost=0;
@@ -110,42 +132,29 @@ int findEnergy(vector<int> state){
   return energy;
 }
 
-// int tempDependentCost(vector<int> state, double temp){
-// int energy = 0;
-// int cost = 0;
-//   for(int i = 0; i < state.size()-1; ++i){
-//     int city1 = state[i];
-//     int city2 = state[i+1];
-//     //cout << "adding:" << city1 << city2 << vertices[city1][city2] << endl;
-//     cost = vertices[city1][city2];
-//     if(cost == -1){
-//       cost = BPENALTY/temp;
-//     }
-//     energy += cost;
-//   }
-//   //cout << "energy:" << energy;
-//   return energy;
-// }
-
-
+/*---------------------------------------------------------------------------
+  permute the current route
+ ---------------------------------------------------------------------------*/
 vector<int> findNeighbor(vector<int> state){//dumb version allows invalid solutions and only swaps neighbors
   int limit = state.size() - 2;
   int city1 = rand() % limit + 1;
   if(DEBUG > 1){
     cout<<"before state"<<endl;
-    printVec(state);
+    printVec(state,0);
   }
   int temp = state[city1];
   state[city1]=state[city1+1];
   state[city1+1]=temp;
   if(DEBUG > 1){
     cout<<"after swap"<<endl;
-    printVec(state);
+    printVec(state,0);
   }
   return state;
   }
 
-
+/*---------------------------------------------------------------------------
+set the inintial route
+ ---------------------------------------------------------------------------*/
 vector<int> initialState(){
   vector<int> initState;
   for(int i=0; i<NUMCITIES; i++){
@@ -153,24 +162,31 @@ vector<int> initialState(){
   }
   if(DEBUG){
     cout << "initial State" <<endl;
-    printVec(initState);
+    printVec(initState,1);
   }
   return initState;
 }
 
+/*---------------------------------------------------------------------------
+print the entire route. essentially unwrapping the paths that go around 
+boundaries
+ ---------------------------------------------------------------------------*/
 void printEntireState(vector <int> state){
-  cout<<"0 ";//initial city
+  cout<<"A ";//initial city
   for(int i=0; i<state.size()-1; i++){
-    printVec(floydPath(state[i],state[i+1]));
+    printVec(floydPath(state[i],state[i+1]),1);
+
   }
 }
 
+/*---------------------------------------------------------------------------
+main simmulated annealing schedule
+ ---------------------------------------------------------------------------*/
 void simulatedAnealing(){
   double temp = HIGH_TEMP;
   vector<int> state = initialState();
   int energy = findEnergy(state);
 
-  int relEnergy ;
   vector<int> S_new;
   int E_new;
 
@@ -211,7 +227,8 @@ void simulatedAnealing(){
   }
   if(DEBUG)
     cout << "chose worse: " << choseWorse <<"times out of "<<iterCount<<"iterations"<<endl;
-  cout<<E_best<<endl;
+  printEntireState(state);
+  cout<<" ("<<E_best<<") "<<endl;
 }
 
 //input format-------------------------------------
@@ -258,22 +275,22 @@ void fillGraphFromFile(std::string value, int count){
 	    
 }
 
-int main()
-{
+int main(){
+  srand( time(NULL) );
+  initMatrix();
 
-    initMatrix();
-
-    string filename = INPUTNAME;
-   	ifstream myfile (filename);
-   	std::string value;
+  //file reading stuff---------------------------------
+  string filename = INPUTNAME;
+  ifstream myfile (filename);
+  std::string value;
 
   //read file
-   if (myfile.is_open()){
+  if (myfile.is_open()){
 
     //get 1st 3 lines
     getline(myfile, value);
     getline(myfile, value); //throw away
-   // getline(myfile, value); //throw away
+    // getline(myfile, value); //throw away
 
     //get the rest
     int count = 0;
@@ -286,12 +303,16 @@ int main()
   } else {
   	std::cout << "Unable to open file ";
   }
+  //----------------------------------------------------------
   if(DEBUG)
     printVertices();
+  
   floyd();
+  
   if(DEBUG)
     printVertices();
+ 
   simulatedAnealing();
 
-    return 0;
+  return 0;
 }
