@@ -7,19 +7,34 @@
 #include <time.h>
 #include <string.h>
 
-#define NUMSETS 3
-#define MAXSETVALUE 4
-#define PATH "D:\\DPrograms\\CodeLite\\CWorkspace\\DesignProblem4\\datasets\\DataSets\\s-X-12-6.txt"
-#define READFROMFILE 0
+#define MAXNUMSETS 200
+#define MAXSETVALUE 100
+#define PATH "/Users/josephvalentine/Documents/code/c/ecen_521/s-k-20-30.txt"
+#define READFROMFILE 1
+#define MAXCHARLENGTH 100
 
-int characterListLength = 1;
-int subsetListLength = 1;
-int SizeOfEachSubset[NUMSETS]={0};//store the length of each given set
+struct subsetSize{ 
+  int size;
+  int id;
+};
+
+int sizeOfBestSolution;
+int numberOfSubsets;
+int universeLength;
+//struct subsetSizeId SizeOfEachSubset[MAXNUMSETS];//store the length of each given set
+struct subsetSize sub[MAXNUMSETS];//store the length of each given set
 int previousRandVal = 1;
-int subsetArrays[NUMSETS][MAXSETVALUE]={0};
-bool subsetArrayMatrix[NUMSETS][MAXSETVALUE]={false}; //store which values are included in each set
+int subsetArrays[MAXNUMSETS][MAXSETVALUE]={0};
+bool subsetArrayMatrix[MAXNUMSETS][MAXSETVALUE]={false}; //store which values are included in each set
 int totalFromAllSubsets[MAXSETVALUE]={0}; //store how often each integer occurs given each value in each subset this will be usefull for pruning
-bool universe[MAXSETVALUE]; //which values (represented by their indexes) do we need
+
+int cmpfunc(const void *a, const void *b){
+  const struct subsetSize *p1 = (struct subsetSize *)a;
+  const struct subsetSize *p2 = (struct subsetSize *)b;
+  if(p1->size > p2->size) return -1;
+  if(p1->size < p2->size) return 1;
+  return 0;
+}
 
 int myRand(){
   struct timeval tv;
@@ -35,7 +50,15 @@ int myRand(){
 void printArray(int array[], int size){
   printf("array----------------\n");
   for(int j = 0; j < size; j++){
-      printf("%d", array[j]);
+      printf("%d ", array[j]+1);
+  }
+  printf("\n---------------------\n");
+}
+
+void printArrayStruct(struct subsetSize array[], int size){
+  printf("array----------------\n");
+  for(int j = 0; j < size; j++){
+      printf("(id:%d ,size:%d) ", array[j].id,array[j].size);
   }
   printf("\n---------------------\n");
 }
@@ -48,10 +71,21 @@ void boolprintArray(bool array[], int size){
   printf("\n---------------------\n");
 }
 
-void printArray2(bool array[][MAXSETVALUE]){
+void printArray2(bool array[][MAXSETVALUE],int size1){
   printf("array2----------------\n");
-  for(int j = 0; j < NUMSETS; j++){
-    for(int i = 0; i < MAXSETVALUE; i++){
+  for(int j = 0; j < size1; j++){
+    for(int i = 1; i <= universeLength; i++){
+      printf("%d", array[j][i]);
+    }
+    printf("\n");
+  }
+  printf("---------------------\n");
+}
+
+void intprintArray2(int array[][MAXSETVALUE],int size1){
+  printf("array2----------------\n");
+  for(int j = 0; j < size1; j++){
+    for(int i = 0; i <= universeLength; i++){
       printf("%d", array[j][i]);
     }
     printf("\n");
@@ -64,7 +98,9 @@ void printArray2(bool array[][MAXSETVALUE]){
 ------------------------------------------------------*/
 void process_solution(int moves[], int k){
   printf("solution found: these are the lists:\n");
-  printArray(moves,NUMSETS);
+  printArray(moves,k+1);
+
+  sizeOfBestSolution=k;
 }
 
 /*-----------------------------------------------------
@@ -74,21 +110,19 @@ void process_solution(int moves[], int k){
 bool is_a_solution(int moves[], int k, int n){
   // printf("in is_a_solution, k is:%d\n",k);
   // printArray(moves,k+1);
-  // boolprintArray(universe,4);
   bool solution;
-  for(int i=0; i < MAXSETVALUE; i++){ //for all values that may be needed in universal set
-    if(universe[i]){//we need this value in our list of sets
-      solution = false;//guilty till proven otherwise
-      for(int j=0; j <= k; j++){ //for each move we have made (each set we have chosen)
-        int setId = moves[j];
-        //printf("setID %d for move: %d\n", setId, j);
-        if(subsetArrayMatrix[setId][i]){//we have the required value in a chosen set
-          solution = true;
-        }
+  for(int i=1; i <= universeLength; i++){ //for all values that may be needed in universal set
+    solution = false;//guilty till proven otherwise
+    for(int j=0; j <= k; j++){ //for each move we have made (each set we have chosen)
+      int setId = moves[j];
+      //printf("setID %d for move: %d\n", setId, j);
+      if(subsetArrayMatrix[setId][i]){//we have the required value in a chosen set
+        solution = true;
       }
-      if(!solution)
-        return false;
     }
+    if(!solution)
+      return false;
+    
   }
   return true;
 }
@@ -103,8 +137,8 @@ void construct_candidates(int moves[], int k, int n, int candidates[], int *numC
    // printf("in construct_candidates, k is:%d\n",k);
 
   int i;                  
-  bool used[NUMSETS];          
-  for (i=0; i<NUMSETS; i++){
+  bool used[numberOfSubsets];          
+  for (i=0; i<numberOfSubsets; i++){
     used[i] = false;
   } 
   for (i=0; i<k; i++){
@@ -128,17 +162,18 @@ void construct_candidates(int moves[], int k, int n, int candidates[], int *numC
   k: depth
   n: max depth
 ------------------------------------------------------*/
-
 bool finished = false; /* found all solutions yet? */
 void backtrack(int moves[], int k, int n)
 {
   // sleep(1);
   // printf("level/k: %d\n",k);
-  int candidates[NUMSETS];/* candidates for next position */
+  int candidates[numberOfSubsets];/* candidates for next position */
   int numCandidates;
   int i;/* counter */
 
-  if (is_a_solution(moves,k,n) || k > 4){
+  if(k >= sizeOfBestSolution){
+    //ignore it
+  } else if (is_a_solution(moves,k,n)){
     process_solution(moves,k);
   } else {
       k = k+1;
@@ -161,14 +196,28 @@ void backtrack(int moves[], int k, int n)
 ------------------------------------------------------*/
 void set_cover(int n){
   //n is the number of set # we have recursed through
-  int moves[NUMSETS]; //moves made to get to the current state of our solution
-  int k=0; //move iterator
-  moves[0]=0; //pick the initial move
+  int moves[numberOfSubsets]; //moves made to get to the current state of our solution
+  int k=-1; //move iterator
+  //moves[0]=0; //pick the initial move
+  
+  //pick initial moves-------
+  int count=0;
+  for(int j = 0; j < numberOfSubsets; j++){
+      if(totalFromAllSubsets[j]==1){
+        
+        moves[count]=j;//pick all the integers only represented in one place
+        k++;
+        count++;
+      }
+  }
+  
+  printf("ones that we have added\n");
+  printArray(moves,k+1);
   backtrack(moves, k, n);
 }
 
 
-int readInputFile(int array[NUMSETS][MAXSETVALUE], char * filename){
+int readInputFile(int array[MAXNUMSETS][MAXSETVALUE], char * filename){
   FILE *stream;
   stream = fopen(filename, "r");
 
@@ -177,18 +226,18 @@ int readInputFile(int array[NUMSETS][MAXSETVALUE], char * filename){
 
     int limiter = 0;
     int lineCount = 0;
-    char line[MAXSETVALUE];
-    while(fgets(line, MAXSETVALUE, stream)){
+    char line[MAXCHARLENGTH];
+    while(fgets(line, MAXCHARLENGTH, stream)){
       char * pch;
       //printf ("Splitting string into tokens:\"%s", line);
       int rowCount = 0;
       pch = strtok (line," ");
       
       if (limiter < 1){
-        characterListLength = atoi(pch);
+        universeLength = atoi(pch);
       }
       if (limiter == 1){
-       subsetListLength = atoi(pch);
+        numberOfSubsets = atoi(pch);
       }
       if(limiter >1){
         while (pch != NULL)
@@ -198,13 +247,15 @@ int readInputFile(int array[NUMSETS][MAXSETVALUE], char * filename){
           int num = atoi(pch);
           //if(printout) printf("opp there it is: %i\n", num);
           array[lineCount][rowCount] = num;
+          subsetArrayMatrix[lineCount][num] = 1;
           //printf("worked\n");
           totalFromAllSubsets[num-1] = totalFromAllSubsets[num-1] +1;
           rowCount++;
           pch = strtok (NULL, " \r\n");
         //if(BiggestSubset < rowCount) {printf("newLongest:%d\n",rowCount); BiggestSubset = rowCount;}
         }
-        SizeOfEachSubset[lineCount] = rowCount;
+        sub[lineCount].size = rowCount;
+        sub[lineCount].id= lineCount;
         lineCount++; 
       }
     
@@ -224,18 +275,18 @@ int main()
   if(READFROMFILE){
     char * filename = PATH;
     readInputFile(subsetArrays, filename);
+    intprintArray2(subsetArrays,numberOfSubsets);
+    
     //---------
     //needed:
     //function to create subsetarraymatrix from subset arrays
     //---------
   } else {
-    universe[0]=false;
-    universe[1]=true;
-    universe[2]=true;
-    universe[3]=true;
-    SizeOfEachSubset[0]=1;
-    SizeOfEachSubset[1]=1;
-    SizeOfEachSubset[2]=2;
+    universeLength=3;
+    numberOfSubsets=3;
+    // SizeOfEachSubset[0]=1;
+    // SizeOfEachSubset[1]=1;
+    // SizeOfEachSubset[2]=2;
     subsetArrayMatrix[0][1]=true;
     subsetArrayMatrix[1][3]=true;
     subsetArrayMatrix[2][1]=true;
@@ -245,8 +296,15 @@ int main()
     totalFromAllSubsets[3]=1;
   }
   printf("printing the subset array matrix (row represents the subset, col represents the integer, 1 means it exists . . .\n");
-  printArray2(subsetArrayMatrix);
-  set_cover(NUMSETS);//pass in the max allowable depth
+  printArray2(subsetArrayMatrix,numberOfSubsets);
+  printf("sub 1 from these...\n");
+  printArray(totalFromAllSubsets,universeLength);
+  
+  sizeOfBestSolution=numberOfSubsets;
+  printArrayStruct(sub,numberOfSubsets);
+  qsort(sub, numberOfSubsets, sizeof(struct subsetSize), cmpfunc);
+  printArrayStruct(sub,numberOfSubsets);
+  set_cover(numberOfSubsets);//pass in the max allowable depth
   
   return 0;
 }
