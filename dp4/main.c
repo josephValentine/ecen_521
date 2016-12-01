@@ -7,9 +7,9 @@
 #include <time.h>
 #include <string.h>
 
-#define MAXNUMSETS 200
-#define MAXSETVALUE 100
-#define PATH "/Users/josephvalentine/Documents/code/c/ecen_521/s-k-20-30.txt"
+#define MAXNUMSETS 50
+#define MAXSETVALUE 200
+#define PATH "/Users/josephvalentine/Documents/code/c/ecen_521/s-k-30-50.txt"
 #define READFROMFILE 1
 #define MAXCHARLENGTH 100
 
@@ -97,7 +97,7 @@ void intprintArray2(int array[][MAXSETVALUE],int size1){
   print the solution etc.
 ------------------------------------------------------*/
 void process_solution(int moves[], int k){
-  printf("solution found: these are the lists:\n");
+  printf("=============================================(%d):\n",k+1);
   printArray(moves,k+1);
 
   sizeOfBestSolution=k;
@@ -108,7 +108,7 @@ void process_solution(int moves[], int k){
   be a more efficient way of doing this...
 ------------------------------------------------------*/
 bool is_a_solution(int moves[], int k, int n){
-  // printf("in is_a_solution, k is:%d\n",k);
+   //printf("in is_a_solution, k is:%d\n",k);
   // printArray(moves,k+1);
   bool solution;
   for(int i=1; i <= universeLength; i++){ //for all values that may be needed in universal set
@@ -134,7 +134,7 @@ bool is_a_solution(int moves[], int k, int n){
   already added yet
 ------------------------------------------------------*/
 void construct_candidates(int moves[], int k, int n, int candidates[], int *numCandidates){
-   // printf("in construct_candidates, k is:%d\n",k);
+    //printf("in construct_candidates, k is:%d\n",k);
 
   int i;                  
   bool used[numberOfSubsets];          
@@ -146,12 +146,23 @@ void construct_candidates(int moves[], int k, int n, int candidates[], int *numC
      used[ moves[i] ] = true;//mark the sets we have already used
   }
 
+  // for(i=0; i<numberOfSubsets; i++){
+  //   for(int j=0; j<numberOfSubsets; j++){
+  //     if(sub[i].id == moves[j]){
+  //       used[ moves[j] ] = true;
+  //     }
+  //   }
+  // }
   *numCandidates = 0;
   for (i=0; i<n; i++){
-    if (used[i] == false) {
-     // printf("i:%d, *ncandidates:%d\n", i,*ncandidates);
-      candidates[ *numCandidates] = i;
+    if (used[ sub[i].id ] == false) {
+     // printf("new cand:%d, *ncandidates:%d\n", sub[i].id,*numCandidates);
+      //printf("working version---new cand:%d, *ncandidates:%d\n", i,*numCandidates);
+      //candidates[ *numCandidates] = sub[i].id;
+      candidates[ *numCandidates] = sub[i].id;
       *numCandidates = *numCandidates + 1;
+    } else {
+      //printf("already used: %d and poo: %d\n", sub[i].id, used[sub[i].id]);
     }
   }
 }
